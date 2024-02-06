@@ -6,14 +6,15 @@ import torch.nn.functional as F
 # 关于 word embedding， 以序列建模为例，考虑 source sentence 和 target sentence
 # 构建序列，序列的字符以其在词表中的索引的形式表示
 
-# 批大小，指的是一次训练迭代中用于更新模型权重的数据样本数量
+# 批大小，指一次训练迭代中用于更新模型权重的数据样本数量
 BATCH_SIZE = 2
 
-# 词表大小，一共8个单词，下标从1-8，下标0让给 padding
+# 原序列词表大小，一共8个单词，下标从1-8，下标0让给 padding
 MAX_SRC_NUM_SEQ_LEN = 8
+# 目标序列词表大小
 MAX_TGT_NUM_SEQ_LEN = 8
 
-# 模型的特征大小，原论文中是512，这里取8
+# 模型特征大小，原论文中是512，这里取8
 MODEL_DIM = 8
 
 # 源序列的最大长度
@@ -28,16 +29,16 @@ MAX_POSITION_LEN = 5
 # src_len = torch.randint(2, 5, (BATCH_SIZE,))
 # tgt_len = torch.randint(2, 5, (BATCH_SIZE,))
 
-# 为了避免每次产生变化，固定 src_len 和 tgt_len
-# 原序列，例子： tensor([2, 4], dtype=torch.int32)， 原序列包含两个样本，第一个样本长度为2， 第二个样本长度为4
+# 为了避免每次产生变化，所以固定 src_len 和 tgt_len 的长度
+# 原序列，例子：tensor([2, 4], dtype=torch.int32)， 即原序列包含两个样本，第一个样本长度为2， 第二个样本长度为4
 src_len = torch.Tensor([2, 4]).to(torch.int32)
-# 目标序列，例子： tensor([4, 3], dtype=torch.int32)， 目标序列包含两个样本，第一个样本长度为4， 第二个样本长度为3
+# 目标序列，例子：tensor([4, 3], dtype=torch.int32)，即目标序列包含两个样本，第一个样本长度为4， 第二个样本长度为3
 tgt_len = torch.Tensor([4, 3]).to(torch.int32)
 
-# # 2. 单词索引构成的句子
-# # 原序列， 例：[tensor([7, 2]), tensor([6, 7, 2, 3])]，原序列包含两个样本，第一个样本（长度为2，其值由词表中下标为7、2的元素组成），第二个样本（长度为4，其值由词表中下标为6、7、2和3的元素组成）
+# # 2. 原序列和目标序列都是由单词索引构成的句子
+# # 原序列， 例：[tensor([7, 2]), tensor([6, 7, 2, 3])]，原序列包含两个样本，第一个样本（长度为2，其值由词表中下标为7和2的元素组成），第二个样本（长度为4，其值由原序列词表中下标为6、7、2和3的元素组成）
 # source_seq = [torch.randint(1, MAX_SRC_NUM_SEQ_LEN, (L,)) for L in src_len]
-# # 目标序列， 例：[tensor([1, 6, 2, 6]), tensor([1, 4, 7])]，原序列包含两个样本，第一个样本（长度为4，其值由词表中下标为1、6、2和6的元素组成），第二个样本（长度为3，其值由词表中下标为1、4和7的元素组成）
+# # 目标序列， 例：[tensor([1, 6, 2, 6]), tensor([1, 4, 7])]，原序列包含两个样本，第一个样本（长度为4，其值由词表中下标为1、6、2和6的元素组成），第二个样本（长度为3，其值由目标序列词表中下标为1、4和7的元素组成）
 # target_seq = [torch.randint(1, MAX_TGT_NUM_SEQ_LEN, (L,)) for L in tgt_len]
 # print(source_seq)
 # print(target_seq)
@@ -58,11 +59,12 @@ target_seq = torch.cat(
 # print(target_seq)
 
 # 3.构造 embedding，nn.Embedding 是一个预训练好的查找表，用于将离散的单词索引映射到连续的向量空间中，每个单词索引对应于一个向量。
-# 使用 MAX_SRC_NUM_SEQ_LEN + 1 作为 num_embeddings的 参数值是为了确保嵌入层能够处理所有可能的单词索引。这里的“+1”是因为索引从0开始，如果你的最大单词索引是 MAX_SRC_NUM_SEQ_LEN，那么词表的大小应该是 MAX_SRC_NUM_SEQ_LEN + 1以包含索引0。
+# 使用 MAX_SRC_NUM_SEQ_LEN + 1 作为 num_embeddings 的参数值是为了确保嵌入层能够处理所有可能的单词索引。这里的“+1”是因为索引从0开始，如果最大单词索引是 MAX_SRC_NUM_SEQ_LEN，那么词表的大小应该是 MAX_SRC_NUM_SEQ_LEN + 1以包含索引0。
 src_embedding_table = nn.Embedding(MAX_SRC_NUM_SEQ_LEN + 1, MODEL_DIM)
 tgt_embedding_table = nn.Embedding(MAX_TGT_NUM_SEQ_LEN + 1, MODEL_DIM)
 # print(src_embedding_table.weight)
 # print(tgt_embedding_table.weight)
+
 # 返回该索引对应的嵌入向量
 src_embedding = src_embedding_table(source_seq)
 tgt_embedding = src_embedding_table(target_seq)
